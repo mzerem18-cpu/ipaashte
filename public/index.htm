@@ -36,12 +36,10 @@
             padding: 16px 20px 24px 20px;
         }
 
-        /* Header */
         .title-box { text-align: center; margin-bottom: 16px; margin-top: 8px; }
         .title-text { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; color: #fff; line-height: 1.1; }
         .title-badge { display: inline-block; background: rgba(255,255,255,0.08); border: 1px solid var(--border-line); color: var(--text-gray); font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 12px; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
 
-        /* Switcher */
         .segment-bg {
             display: flex; background: var(--card-base); border-radius: 12px; padding: 4px; position: relative; margin-bottom: 16px; border: 1px solid var(--border-line);
         }
@@ -56,7 +54,6 @@
         .view-section { display: none; flex-direction: column; opacity: 0; transition: opacity 0.3s; height: 100%; }
         .view-active { display: flex; opacity: 1; }
 
-        /* VIP UI */
         .panel { background: var(--card-glass); border-radius: 20px; padding: 16px; display: flex; flex-direction: column; gap: 12px; border: 1px solid var(--border-line); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
         
         .vip-app-btn {
@@ -81,7 +78,6 @@
         }
         .go-btn:active { opacity: 0.8; transform: scale(0.98); }
 
-        /* Free UI Controls */
         .select-native {
             width: 100%; background: var(--card-base) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2398989D' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 14px center; background-size: 14px; border: 1px solid var(--border-line); border-radius: 14px; padding: 14px 16px; color: white; font-size: 14px; font-weight: 500; outline: none; appearance: none; margin-bottom: 12px;
         }
@@ -92,7 +88,6 @@
         }
         .mini-btn:active { background: #2C2C2E; }
 
-        /* APP LIBRARY */
         .library-box {
             flex: 1; background: var(--card-glass); border-radius: 20px; padding: 16px 12px; border: 1px solid var(--border-line); display: flex; flex-direction: column; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
         }
@@ -135,7 +130,6 @@
         }
         .store-get-btn:active { background: rgba(255,255,255,0.15); }
 
-        /* Modal VIP */
         .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 50; opacity: 0; pointer-events: none; transition: 0.3s; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
         .modal-bg.show { opacity: 1; pointer-events: auto; }
         
@@ -160,20 +154,17 @@
 
     <div class="main-frame">
         
-        <!-- Header -->
         <div class="title-box">
             <h1 class="title-text">AshteMobile</h1>
             <div class="title-badge">Cloud Engine</div>
         </div>
 
-        <!-- Switcher -->
         <div class="segment-bg">
             <div class="seg-indicator" id="tabIndicator" style="transform: translateX(100%);"></div>
             <div class="seg-btn" id="btnPrem" onclick="setTab('premium')">VIP Signature</div>
             <div class="seg-btn active" id="btnFree" onclick="setTab('free')">Free Enterprise</div>
         </div>
 
-        <!-- VIP View -->
         <form id="formVIP" class="view-section">
             <div class="panel">
                 <div class="vip-app-btn" onclick="openSheet()">
@@ -213,7 +204,6 @@
             </div>
         </form>
 
-        <!-- Free View -->
         <div id="formFree" class="view-section view-active">
             <div class="panel mb-4">
                 
@@ -270,19 +260,16 @@
             <div class="library-box">
                 <h2 class="lib-title">App Library</h2>
                 <div class="bento-grid" id="bentoContainer">
-                    <!-- ئەپەکان لێرە بە داینامیکی دروست دەبن -->
                 </div>
             </div>
             
         </div>
     </div>
 
-    <!-- Modal بۆ VIP -->
     <div class="modal-bg" id="sheetOverlay" onclick="closeSheet()"></div>
     <div class="sheet" id="appSheet">
         <div class="sheet-pill"></div>
         <div class="flex flex-col" id="sheetList">
-            <!-- لیستی VIP لێرە بە داینامیکی دروست دەبن -->
         </div>
     </div>
 
@@ -293,12 +280,11 @@
 
         async function loadAppsFromSource() {
             try {
-                // هێنانی ڕاستەوخۆ لە فایلەکەی خۆت یان لە سۆرسێکی متمانەپێکراو بە بێ کێشەی CORS
-                const response = await fetch('https://ashtemobile.site/Ashtemobile.json?v=' + Date.now(), {
-                    cache: 'no-store'
-                });
+                const proxyUrl = 'https://api.allorigins.win/raw?url=';
+                const targetUrl = encodeURIComponent('https://ashtemobile.site/Ashtemobile.json?v=' + Date.now());
+                const response = await fetch(proxyUrl + targetUrl);
                 
-                if(!response.ok) throw new Error('Failed to fetch JSON');
+                if(!response.ok) throw new Error('Failed to fetch JSON via proxy');
                 const data = await response.json();
                 
                 const apps = Array.isArray(data) ? data : (data.apps || data.data || []); 
@@ -316,7 +302,6 @@
                     const appIcon = app.iconURL || app.icon || app.image || 'https://raw.githubusercontent.com/mzereashte94/Mzere/main/icons/Ashtemobile.jpeg';
                     const ipaLink = app.download_url || app.install_url || app.downloadURL || app.url || ''; 
 
-                    // ١. کارتەکانی Free
                     bentoContainer.innerHTML += `
                         <div class="app-bento-card">
                             <div class="app-img-box">
@@ -331,7 +316,6 @@
                         </div>
                     `;
 
-                    // ٢. لیستی VIP
                     sheetList.innerHTML += `
                         <div class="sheet-row" onclick="selectApp('${appName.replace(/'/g, "\\'")}', '${appIcon}', '${ipaLink}')">
                             <img src="${appIcon}" alt="${appName}"> <span>${appName}</span>
