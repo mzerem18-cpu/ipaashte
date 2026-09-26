@@ -280,12 +280,22 @@
 
         async function loadAppsFromSource() {
             try {
-                const proxyUrl = 'https://api.allorigins.win/raw?url=';
-                const targetUrl = encodeURIComponent('https://ashtemobile.site/Ashtemobile.json?v=' + Date.now());
-                const response = await fetch(proxyUrl + targetUrl);
-                
-                if(!response.ok) throw new Error('Failed to fetch JSON via proxy');
-                const data = await response.json();
+                // Direct fetch with fallback proxy to ensure reliable loading on Vercel
+                let data = [];
+                try {
+                    const res = await fetch('https://ashtemobile.site/Ashtemobile.json?v=' + Date.now());
+                    if (res.ok) {
+                        data = await res.json();
+                    } else {
+                        throw new Error('Direct fetch failed');
+                    }
+                } catch (err) {
+                    const proxyUrl = 'https://api.allorigins.win/raw?url=';
+                    const targetUrl = encodeURIComponent('https://ashtemobile.site/Ashtemobile.json?v=' + Date.now());
+                    const response = await fetch(proxyUrl + targetUrl);
+                    if(!response.ok) throw new Error('Failed to fetch JSON via proxy');
+                    data = await response.json();
+                }
                 
                 const apps = Array.isArray(data) ? data : (data.apps || data.data || []); 
                 
