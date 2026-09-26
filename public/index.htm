@@ -293,19 +293,28 @@
 
         async function loadAppsFromSource() {
             try {
-                const response = await fetch('https://ashtemobile.site/Ashtemobile.json');
-                if(!response.ok) throw new Error('Network response was not ok');
+                // هێنانی ڕاستەوخۆ لە فایلەکەی خۆت یان لە سۆرسێکی متمانەپێکراو بە بێ کێشەی CORS
+                const response = await fetch('https://ashtemobile.site/Ashtemobile.json?v=' + Date.now(), {
+                    cache: 'no-store'
+                });
+                
+                if(!response.ok) throw new Error('Failed to fetch JSON');
                 const data = await response.json();
                 
-                const apps = data.apps || []; 
+                const apps = Array.isArray(data) ? data : (data.apps || data.data || []); 
                 
                 bentoContainer.innerHTML = '';
                 sheetList.innerHTML = '';
 
+                if (apps.length === 0) {
+                    bentoContainer.innerHTML = '<p style="text-align: center; width: 100%; color: var(--text-gray); font-size: 14px; margin-top: 20px;">No apps found.</p>';
+                    return;
+                }
+
                 apps.forEach(app => {
-                    const appName = app.name;
-                    const appIcon = app.iconURL || app.icon || 'https://raw.githubusercontent.com/mzereashte94/Mzere/main/icons/Ashtemobile.jpeg';
-                    const ipaLink = app.download_url || app.install_url || app.downloadURL || ''; 
+                    const appName = app.name || app.title || 'App';
+                    const appIcon = app.iconURL || app.icon || app.image || 'https://raw.githubusercontent.com/mzereashte94/Mzere/main/icons/Ashtemobile.jpeg';
+                    const ipaLink = app.download_url || app.install_url || app.downloadURL || app.url || ''; 
 
                     // ١. کارتەکانی Free
                     bentoContainer.innerHTML += `
