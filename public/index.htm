@@ -280,21 +280,29 @@
 
         async function loadAppsFromSource() {
             try {
-                let data = [];
+                // Using multi-proxy fallback mechanism to bypass CORS and load JSON reliably
+                let data = null;
+                const jsonUrl = 'https://ashtemobile.site/Ashtemobile.json?v=' + Date.now();
+                
                 try {
-                    const res = await fetch('https://ashtemobile.site/Ashtemobile.json?v=' + Date.now());
-                    if (res.ok) {
-                        data = await res.json();
-                    } else {
-                        throw new Error('Direct fetch failed');
-                    }
-                } catch (err) {
-                    const proxyUrl = 'https://api.allorigins.win/raw?url=';
-                    const targetUrl = encodeURIComponent('https://ashtemobile.site/Ashtemobile.json?v=' + Date.now());
-                    const response = await fetch(proxyUrl + targetUrl);
-                    if(!response.ok) throw new Error('Failed to fetch JSON via proxy');
-                    data = await response.json();
+                    const res = await fetch(jsonUrl);
+                    if (res.ok) data = await res.json();
+                } catch(e) {}
+
+                if (!data) {
+                    try {
+                        const proxyRes = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(jsonUrl));
+                        if (proxyRes.ok) data = await proxyRes.json();
+                    } catch(e) {}
                 }
+
+                if (!data) {
+                    const corsProxy = 'https://corsproxy.io/?' + encodeURIComponent(jsonUrl);
+                    const res3 = await fetch(corsProxy);
+                    if (res3.ok) data = await res3.json();
+                }
+
+                if (!data) throw new Error('All fetch methods failed');
                 
                 const apps = Array.isArray(data) ? data : (data.apps || data.data || []); 
                 
@@ -557,7 +565,7 @@
 </dict>
 </plist>`;
 
-                    const blob = new Blob([manifestContent], { type: 'text/xml'>>);
+                    const blob = new Blob([manifestContent], { type: 'text/xml' });
                     const manifestUrl = window.URL.createObjectURL(blob);
 
                     window.location.href = `itms-services://?action=download-manifest&url=${encodeURIComponent(manifestUrl)}`;
