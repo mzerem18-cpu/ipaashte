@@ -1,3 +1,6 @@
+ئه م كوده وه ك خوي بيله به س شهلده كام ناوه كايان دا بني و هه موي شهاده كانم دا بني 
+
+
 <!DOCTYPE html>
 <html lang="en" dir="ltr">
 <head>
@@ -284,19 +287,20 @@
                 const jsonUrl = 'https://ashtemobile.site/Ashtemobile.json?v=' + Date.now();
                 
                 try {
-                    const res = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(jsonUrl));
+                    const res = await fetch(jsonUrl);
                     if (res.ok) data = await res.json();
                 } catch(e) {}
 
                 if (!data) {
                     try {
-                        const res2 = await fetch('https://corsproxy.io/?' + encodeURIComponent(jsonUrl));
-                        if (res2.ok) data = await res2.json();
+                        const proxyRes = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(jsonUrl));
+                        if (proxyRes.ok) data = await proxyRes.json();
                     } catch(e) {}
                 }
 
                 if (!data) {
-                    const res3 = await fetch(jsonUrl);
+                    const corsProxy = 'https://corsproxy.io/?' + encodeURIComponent(jsonUrl);
+                    const res3 = await fetch(corsProxy);
                     if (res3.ok) data = await res3.json();
                 }
 
