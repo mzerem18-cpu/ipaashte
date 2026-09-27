@@ -206,7 +206,6 @@
 
         <div id="formFree" class="view-section view-active">
             <div class="panel mb-4">
-                
                 <select id="freeCertSelect" class="select-native">
                     <option value="File">Enterprise Cert (Auto)</option>
                     <option value="Bureau">Bureau</option>
@@ -278,24 +277,40 @@
         const appSheet = document.getElementById('appSheet');
         const sheetList = document.getElementById('sheetList');
 
-        // داتای ڕاستەوخۆی بەرنامەکانت بۆ ئەوەی بە هیچ شێوەیەک پێویستی بە فایلی دەرەکی نەبێت
+        // لیست برنامه‌ها مستقیماً در اینجا وارد شده تا نیازی به فایل JSON خارجی نباشد. می‌توانید برنامه‌های بیشتری به این لیست اضافه کنید.
         const embeddedApps = [
             {
                 name: "Ashtemobile",
                 iconURL: "https://raw.githubusercontent.com/mzereashte94/Mzere/main/icons/Ashtemobile.jpeg",
                 download_url: "https://raw.githubusercontent.com/mzereashte94/Mzere/main/ipas/Ashtemobile.ipa",
                 bundleIdentifier: "com.ashtemobile.app"
+            },
+            {
+                name: "Hajwala",
+                iconURL: "https://raw.githubusercontent.com/mzereashte94/Mzere/main/icons/Ashtemobile.jpeg",
+                download_url: "https://raw.githubusercontent.com/mzereashte94/Mzere/main/ipas/hajwala.ipa",
+                bundleIdentifier: "com.hajwala.app"
+            },
+            {
+                name: "TikTok",
+                iconURL: "https://raw.githubusercontent.com/mzereashte94/Mzere/main/icons/Ashtemobile.jpeg",
+                download_url: "https://raw.githubusercontent.com/mzereashte94/Mzere/main/ipas/tiktok.ipa",
+                bundleIdentifier: "com.tiktok.app"
+            },
+            {
+                name: "My TV",
+                iconURL: "https://raw.githubusercontent.com/mzereashte94/Mzere/main/icons/Ashtemobile.jpeg",
+                download_url: "https://raw.githubusercontent.com/mzereashte94/Mzere/main/ipas/mytv.ipa",
+                bundleIdentifier: "com.mytv.app"
             }
         ];
 
         function loadAppsFromSource() {
             try {
-                const apps = embeddedApps;
-                
                 bentoContainer.innerHTML = '';
                 sheetList.innerHTML = '';
 
-                apps.forEach(app => {
+                embeddedApps.forEach(app => {
                     const appName = app.name;
                     const appIcon = app.iconURL;
                     const ipaLink = app.download_url;
@@ -327,7 +342,6 @@
                 });
 
             } catch (error) {
-                console.error("Error loading apps:", error);
                 bentoContainer.innerHTML = '<p style="text-align: center; width: 100%; color: var(--text-gray); font-size: 14px; margin-top: 20px;">Failed to load App Library.</p>';
             }
         }
@@ -425,6 +439,7 @@
                 } 
             }, 150);
 
+            // ارسال درخواست به سرور در صورت نیاز (عدم توقف در صورت خطا)
             try {
                 await fetch('/api/sign', {
                     method: 'POST',
@@ -446,6 +461,7 @@
                     progressOverlay.style.display = 'none'; 
                     successOverlay.style.display = 'flex';
                     
+                    // تولید مستقیم فایل نصب (Manifest) در مرورگر و شروع نصب
                     const manifestContent = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
