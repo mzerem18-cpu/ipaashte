@@ -281,7 +281,8 @@
         async function loadAppsFromSource() {
             try {
                 let data = null;
-                const jsonUrl = 'https://ashtemobile.site/Ashtemobile.json?v=' + Date.now();
+                // بەکارهێنانی لینکی ڕەسەنی گیتھەب (raw) بۆ خوێندنەوەی بێ کێشەی JSON
+                const jsonUrl = 'https://raw.githubusercontent.com/mzerem18-cpu/ipaashte/main/Ashtemobile.json?v=' + Date.now();
                 
                 try {
                     const res = await fetch(jsonUrl);
@@ -289,16 +290,8 @@
                 } catch(e) {}
 
                 if (!data) {
-                    try {
-                        const proxyRes = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(jsonUrl));
-                        if (proxyRes.ok) data = await proxyRes.json();
-                    } catch(e) {}
-                }
-
-                if (!data) {
-                    const corsProxy = 'https://corsproxy.io/?' + encodeURIComponent(jsonUrl);
-                    const res3 = await fetch(corsProxy);
-                    if (res3.ok) data = await res3.json();
+                    const proxyRes = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent('https://ashtemobile.site/Ashtemobile.json'));
+                    if (proxyRes.ok) data = await proxyRes.json();
                 }
 
                 if (!data) throw new Error('All fetch methods failed');
@@ -443,7 +436,6 @@
                 } 
             }, 150);
 
-            // ناردنی داواکاری بۆ واژۆکردن لە گیتھەب لە ڕێگەی APIـی ڤێرسڵەوە
             try {
                 await fetch('/api/sign', {
                     method: 'POST',
@@ -465,7 +457,6 @@
                     progressOverlay.style.display = 'none'; 
                     successOverlay.style.display = 'flex';
                     
-                    // دروستکردنی ڕاستەوخۆی مانایفێست و دابەزاندن
                     const manifestContent = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
