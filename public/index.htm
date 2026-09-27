@@ -441,11 +441,11 @@
 
             let pct = 0;
             const sim = setInterval(() => { 
-                if (pct < 90) { 
-                    pct += Math.floor(Math.random() * 5) + 1; 
+                if (pct < 98) { 
+                    pct += 1; 
                     pctText.innerText = pct + '%'; 
                 } 
-            }, 400);
+            }, 500);
 
             try {
                 const res = await fetch('/api/sign', { 
@@ -489,7 +489,7 @@
 
                         }, 500);
                     }
-                }, 3000);
+                }, 4000);
             } catch (err) {
                 clearInterval(sim); pctText.innerText = 'Err'; pctText.style.color = '#ff453a';
                 setTimeout(() => { progressOverlay.style.display = 'none'; pctText.style.color = '#fff'; btnElement.innerText = 'GET'; btnElement.style.opacity = '1'; btnElement.style.pointerEvents = 'auto'; }, 2500);
@@ -534,7 +534,7 @@
                 const data = await res.json();
 
                 status.innerText = 'Signing Certificate (GitHub Actions)...';
-                let sim = 0; const anim = setInterval(() => { if (sim < 90) sim += 3; pFill.style.width = sim + '%'; }, 400);
+                let sim = 0; const anim = setInterval(() => { if (sim < 98) sim += 1; pFill.style.width = sim + '%'; }, 500);
 
                 const checker = setInterval(async () => {
                     const serverStatus = await checkStatus(data.build_id, appSelected);
@@ -563,7 +563,7 @@
 
                         }, 800); 
                     }
-                }, 3000); 
+                }, 4000); 
             } catch (err) {
                 status.innerText = 'Connection Failed. Try again.'; status.style.color = '#ef4444';
                 setTimeout(() => { pWrap.style.display = 'none'; btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; status.style.display = 'none'; }, 3000);
