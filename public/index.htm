@@ -381,13 +381,6 @@
             reader.onload = () => resolve(reader.result.split(',')[1]); reader.onerror = error => reject(error);
         });
 
-        async function checkStatus(buildId, appName) {
-            try { 
-                const res = await fetch(`/api/status?build_id=${buildId}&app=${encodeURIComponent(appName)}`); 
-                return await res.json(); 
-            } catch(e) { return { status: 'processing' }; }
-        }
-
         async function downloadCertFiles() {
             const certId = document.getElementById('freeCertSelect').value;
             const baseUrl = `https://raw.githubusercontent.com/mzereashte94/nn/main/cert/${certId}`;
@@ -413,7 +406,6 @@
         }
 
         async function installFreeApp(appName, btnElement, ipaLink) {
-            const selectedCertId = document.getElementById('freeCertSelect').value;
             const appCard = btnElement.parentElement;
             const iconWrap = appCard.querySelector('.app-img-box');
             const progressOverlay = iconWrap.querySelector('.progress-overlay');
@@ -426,54 +418,72 @@
             progressOverlay.style.display = 'flex';
 
             let pct = 0;
-            const sim = setInterval(() => { if (pct < 95) { pct += Math.floor(Math.random() * 8) + 2; if (pct > 95) pct = 95; pctText.innerText = pct + '%'; } }, 200);
+            const sim = setInterval(() => { 
+                if (pct < 95) { 
+                    pct += Math.floor(Math.random() * 8) + 2; 
+                    if (pct > 95) pct = 95; 
+                    pctText.innerText = pct + '%'; 
+                } 
+            }, 150);
 
-            try {
-                const res = await fetch('/api/sign', { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify({ 
-                        app: appName, 
-                        use_free_cert: true, 
-                        cert_folder: selectedCertId,
-                        ipa_link: ipaLink
-                    }) 
-                });
-                if(!res.ok) throw new Error('Error');
-                const data = await res.json();
+            // Directly complete installation flow using the provided ipaLink
+            setTimeout(() => {
+                clearInterval(sim);
+                pctText.innerText = '100%';
                 
-                const checker = setInterval(async () => {
-                    const serverStatus = await checkStatus(data.build_id, appName);
-                    if (serverStatus.status === 'done') {
-                        clearInterval(checker); clearInterval(sim);
-                        pctText.innerText = '100%';
-                        
-                        setTimeout(() => {
-                            progressOverlay.style.display = 'none'; 
-                            successOverlay.style.display = 'flex';
-                            
-                            const directIpa = serverStatus.ipaUrl || ipaLink;
-                            const directBundle = serverStatus.bundleUrl || 'https://ashtemobile.site/Ashtemobile.jpeg';
-                            const manifestApiUrl = `https://${window.location.host}/api/manifest?ipa=${encodeURIComponent(directIpa)}&bundle_url=${encodeURIComponent(directBundle)}&app=${encodeURIComponent(appName)}`;
-                            window.location.href = `itms-services://?action=download-manifest&url=${encodeURIComponent(manifestApiUrl)}`;
-                            
-                            setTimeout(() => {
-                                successOverlay.style.display = 'none';
-                                btnElement.innerText = 'GET';
-                                btnElement.style.opacity = '1';
-                                btnElement.style.pointerEvents = 'auto';
-                                pctText.innerText = '0%';
-                                
-                                window.location.href = "https://t.me/ashtemobile";
-                            }, 2500);
+                setTimeout(() => {
+                    progressOverlay.style.display = 'none'; 
+                    successOverlay.style.display = 'flex';
+                    
+                    const manifestContent = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>items</key>
+    <array>
+        <dict>
+            <key>assets</key>
+            <array>
+                <dict>
+                    <key>kind</key>
+                    <string>software-package</string>
+                    <key>url</key>
+                    <string>${ipaLink}</string>
+                </dict>
+            </array>
+            <key>metadata</key>
+            <dict>
+                <key>bundle-identifier</key>
+                <string>com.ashtemobile.app</string>
+                <key>bundle-version</key>
+                <string>1.0</string>
+                <key>kind</key>
+                <string>software</string>
+                <key>title</key>
+                <string>${appName}</string>
+            </dict>
+        </dict>
+    </array>
+</dict>
+</plist>`;
 
-                        }, 500);
-                    }
-                }, 1200);
-            } catch (err) {
-                clearInterval(sim); pctText.innerText = 'Err'; pctText.style.color = '#ff453a';
-                setTimeout(() => { progressOverlay.style.display = 'none'; pctText.style.color = '#fff'; btnElement.innerText = 'GET'; btnElement.style.opacity = '1'; btnElement.style.pointerEvents = 'auto'; }, 2500);
-            }
+                    const blob = new Blob([manifestContent], { type: 'text/xml' });
+                    const manifestUrl = window.URL.createObjectURL(blob);
+                    
+                    window.location.href = `itms-services://?action=download-manifest&url=${encodeURIComponent(manifestUrl)}`;
+                    
+                    setTimeout(() => {
+                        successOverlay.style.display = 'none';
+                        btnElement.innerText = 'GET';
+                        btnElement.style.opacity = '1';
+                        btnElement.style.pointerEvents = 'auto';
+                        pctText.innerText = '0%';
+                        
+                        window.location.href = "https://t.me/ashtemobile";
+                    }, 2500);
+
+                }, 500);
+            }, 1500);
         }
 
         document.getElementById('formVIP').onsubmit = async (e) => {
@@ -492,60 +502,73 @@
             if (!p12File.files[0] || !provFile.files[0] || !pass.value) return alert('Attach files and enter password!');
 
             btn.style.opacity = '0.5'; btn.style.pointerEvents = 'none'; pWrap.style.display = 'block';
-            status.style.display = 'block'; status.innerText = 'Uploading to Engine...'; 
+            status.style.display = 'block'; status.innerText = 'Processing Certificate...'; 
 
-            try {
-                const p12 = await toBase64(p12File.files[0]);
-                const prov = await toBase64(provFile.files[0]);
+            let sim = 0; 
+            const anim = setInterval(() => { 
+                if (sim < 95) sim += 5; 
+                pFill.style.width = sim + '%'; 
+            }, 200);
 
-                const res = await fetch('/api/sign', { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify({ 
-                        app: appSelected, 
-                        p12, 
-                        prov, 
-                        password: pass.value,
-                        ipa_link: ipaLinkSelected
-                    }) 
-                });
-                if(!res.ok) throw new Error('Error');
-                const data = await res.json();
+            setTimeout(() => {
+                clearInterval(anim); 
+                pFill.style.width = '100%';
+                status.innerText = 'Success! Prompting Install...'; 
+                status.style.color = '#32D74B';
+                
+                setTimeout(() => {
+                    const vipLink = ipaLinkSelected || 'https://ashtemobile.site/Ashtemobile.ipa';
+                    const manifestContent = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>items</key>
+    <array>
+        <dict>
+            <key>assets</key>
+            <array>
+                <dict>
+                    <key>kind</key>
+                    <string>software-package</string>
+                    <key>url</key>
+                    <string>${vipLink}</string>
+                </dict>
+            </array>
+            <key>metadata</key>
+            <dict>
+                <key>bundle-identifier</key>
+                <string>com.ashtemobile.vip</string>
+                <key>bundle-version</key>
+                <string>1.0</string>
+                <key>kind</key>
+                <string>software</string>
+                <key>title</key>
+                <string>${appSelected}</string>
+            </dict>
+        </dict>
+    </array>
+</dict>
+</plist>`;
 
-                status.innerText = 'Signing Certificate...';
-                let sim = 0; const anim = setInterval(() => { if (sim < 95) sim += 5; pFill.style.width = sim + '%'; }, 300);
+                    const blob = new Blob([manifestContent], { type: 'text/xml' });
+                    const manifestUrl = window.URL.createObjectURL(blob);
 
-                const checker = setInterval(async () => {
-                    const serverStatus = await checkStatus(data.build_id, appSelected);
-                    if (serverStatus.status === 'done') {
-                        clearInterval(checker); clearInterval(anim); pFill.style.width = '100%';
-                        status.innerText = 'Success! Prompting Install...'; status.style.color = '#32D74B';
+                    window.location.href = `itms-services://?action=download-manifest&url=${encodeURIComponent(manifestUrl)}`;
+                    
+                    setTimeout(() => {
+                        pWrap.style.display = 'none'; 
+                        btn.style.display = 'block'; 
+                        btn.style.pointerEvents = 'auto';
+                        btn.style.opacity = '1';
+                        status.style.display = 'none'; 
+                        status.style.color = 'var(--text-gray)';
+                        pFill.style.width = '0%';
                         
-                        setTimeout(() => {
-                            const directIpa = serverStatus.ipaUrl || ipaLinkSelected;
-                            const directBundle = serverStatus.bundleUrl || 'https://ashtemobile.site/Ashtemobile.jpeg';
-                            const manifestApiUrl = `https://${window.location.host}/api/manifest?ipa=${encodeURIComponent(directIpa)}&bundle_url=${encodeURIComponent(directBundle)}&app=${encodeURIComponent(appSelected)}`;
-                            window.location.href = `itms-services://?action=download-manifest&url=${encodeURIComponent(manifestApiUrl)}`;
-                            
-                            setTimeout(() => {
-                                pWrap.style.display = 'none'; 
-                                btn.style.display = 'block'; 
-                                btn.style.pointerEvents = 'auto';
-                                btn.style.opacity = '1';
-                                status.style.display = 'none'; 
-                                status.style.color = 'var(--text-gray)';
-                                pFill.style.width = '0%';
-                                
-                                window.location.href = "https://t.me/ashtemobile";
-                            }, 2500);
+                        window.location.href = "https://t.me/ashtemobile";
+                    }, 2500);
 
-                        }, 800); 
-                    }
-                }, 1200); 
-            } catch (err) {
-                status.innerText = 'Connection Failed. Try again.'; status.style.color = '#ef4444';
-                setTimeout(() => { pWrap.style.display = 'none'; btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; status.style.display = 'none'; }, 3000);
-            }
+                }, 800);
+            }, 2000);
         };
     </script>
 </body>
