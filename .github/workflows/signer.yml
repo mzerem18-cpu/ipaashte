@@ -55,9 +55,13 @@ jobs:
           ) &
           
           (
-            # لێرەدا ڕاستەوخۆ ئەپەکە لەو لینکە دادەگرێت کە وێبسایتەکە بۆی ناردووە
+            # بەکارهێنانی curl -L بۆ ئەوەی فایلی ڕاستەقینە بهێنێت تەنانەت ئەگەر لینکەکەش گۆڕدرابێت
             echo "Downloading IPA from: $IPA_LINK"
-            wget -qO raw_app.ipa "$IPA_LINK"
+            curl -L -o raw_app.ipa "$IPA_LINK"
+            
+            # پشکنینی قەبارەی فایلەکە (بۆ ئەوەی لە لۆگەکان بزانیت بە باشی دابەزیوە یان نا)
+            echo "Downloaded File Size:"
+            ls -lh raw_app.ipa
           ) &
           
           (
