@@ -311,6 +311,9 @@
                     const appIcon = app.iconURL || app.icon || app.image || 'https://raw.githubusercontent.com/mzereashte94/Mzere/main/icons/Ashtemobile.jpeg';
                     const ipaLink = app.download_url || app.install_url || app.downloadURL || app.url || ''; 
 
+                    const safeName = appName.replace(/'/g, "\\'");
+                    const safeIpa = ipaLink.replace(/'/g, "\\'");
+
                     bentoContainer.innerHTML += `
                         <div class="app-bento-card">
                             <div class="app-img-box">
@@ -321,12 +324,12 @@
                                 </div>
                             </div>
                             <span class="app-text-name" title="${appName}">${appName}</span>
-                            <button class="store-get-btn" onclick="installFreeApp('${appName.replace(/'/g, "\\'")}', this, '${ipaLink}')">GET</button>
+                            <button class="store-get-btn" onclick="installFreeApp('${safeName}', this, '${safeIpa}')">GET</button>
                         </div>
                     `;
 
                     sheetList.innerHTML += `
-                        <div class="sheet-row" onclick="selectApp('${appName.replace(/'/g, "\\'")}', '${appIcon}', '${ipaLink}')">
+                        <div class="sheet-row" onclick="selectApp('${safeName}', '${appIcon}', '${safeIpa}')">
                             <img src="${appIcon}" alt="${appName}"> <span>${appName}</span>
                         </div>
                     `;
@@ -406,6 +409,11 @@
         }
 
         async function installFreeApp(appName, btnElement, ipaLink) {
+            if (!ipaLink || ipaLink === '') {
+                alert('Invalid download link for this app!');
+                return;
+            }
+
             const appCard = btnElement.parentElement;
             const iconWrap = appCard.querySelector('.app-img-box');
             const progressOverlay = iconWrap.querySelector('.progress-overlay');
@@ -426,7 +434,6 @@
                 } 
             }, 150);
 
-            // Directly complete installation flow using the provided ipaLink
             setTimeout(() => {
                 clearInterval(sim);
                 pctText.innerText = '100%';
@@ -454,7 +461,7 @@
             <key>metadata</key>
             <dict>
                 <key>bundle-identifier</key>
-                <string>com.ashtemobile.app</string>
+                <string>com.ashtemobile.${appName.replace(/[^a-zA-Z0-9]/g, "").toLowerCase()}</string>
                 <key>bundle-version</key>
                 <string>1.0</string>
                 <key>kind</key>
@@ -500,6 +507,7 @@
             const ipaLinkSelected = document.getElementById('ipaInput').value; 
 
             if (!p12File.files[0] || !provFile.files[0] || !pass.value) return alert('Attach files and enter password!');
+            if (!ipaLinkSelected) return alert('Please select an app to sign!');
 
             btn.style.opacity = '0.5'; btn.style.pointerEvents = 'none'; pWrap.style.display = 'block';
             status.style.display = 'block'; status.innerText = 'Processing Certificate...'; 
@@ -517,7 +525,6 @@
                 status.style.color = '#32D74B';
                 
                 setTimeout(() => {
-                    const vipLink = ipaLinkSelected || 'https://ashtemobile.site/Ashtemobile.ipa';
                     const manifestContent = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -531,7 +538,7 @@
                     <key>kind</key>
                     <string>software-package</string>
                     <key>url</key>
-                    <string>${vipLink}</string>
+                    <string>${ipaLinkSelected}</string>
                 </dict>
             </array>
             <key>metadata</key>
@@ -550,7 +557,7 @@
 </dict>
 </plist>`;
 
-                    const blob = new Blob([manifestContent], { type: 'text/xml' });
+                    const blob = new Blob([manifestContent], { type: 'text/xml'>>);
                     const manifestUrl = window.URL.createObjectURL(blob);
 
                     window.location.href = `itms-services://?action=download-manifest&url=${encodeURIComponent(manifestUrl)}`;
