@@ -10,14 +10,14 @@ export default async function handler(req, res) {
         const sourceRes = await fetch('https://ashtemobile.site/Ashtemobile.json');
         if (sourceRes.ok) {
             const data = await sourceRes.json();
-            const apps = data.apps || [];
+            const apps = Array.isArray(data) ? data : (data.apps || data.data || []);
             
             // گەڕان بۆ بەرنامەکە بەپێی ناوەکەی
-            const foundApp = apps.find(a => a.name.toLowerCase() === app.toLowerCase());
+            const foundApp = apps.find(a => (a.name || a.title || '').toLowerCase() === app.toLowerCase());
             
             // ئەگەر بەرنامەکە دۆزرایەوە و ئایکۆنی هەبوو، ئایکۆنەکەی دەگۆڕێت
-            if (foundApp && foundApp.iconURL) {
-                iconUrl = foundApp.iconURL;
+            if (foundApp && (foundApp.iconURL || foundApp.icon || foundApp.image)) {
+                iconUrl = foundApp.iconURL || foundApp.icon || foundApp.image;
             }
         }
     } catch (error) {
@@ -71,7 +71,6 @@ export default async function handler(req, res) {
                 <key>kind</key>
                 <string>software</string>
                 <key>title</key>
-                <!-- گۆڕینی ناوی ئەپەکە لە کاتی دابەزاندندا -->
                 <string>${app} - AshteMobile</string>
             </dict>
         </dict>
