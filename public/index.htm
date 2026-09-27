@@ -278,39 +278,28 @@
         const appSheet = document.getElementById('appSheet');
         const sheetList = document.getElementById('sheetList');
 
-        async function loadAppsFromSource() {
+        // داتای ڕاستەوخۆی بەرنامەکانت بۆ ئەوەی بە هیچ شێوەیەک پێویستی بە فایلی دەرەکی نەبێت
+        const embeddedApps = [
+            {
+                name: "Ashtemobile",
+                iconURL: "https://raw.githubusercontent.com/mzereashte94/Mzere/main/icons/Ashtemobile.jpeg",
+                download_url: "https://raw.githubusercontent.com/mzereashte94/Mzere/main/ipas/Ashtemobile.ipa",
+                bundleIdentifier: "com.ashtemobile.app"
+            }
+        ];
+
+        function loadAppsFromSource() {
             try {
-                let data = null;
-                // بەکارهێنانی لینکی ڕەسەنی گیتھەب (raw) بۆ خوێندنەوەی بێ کێشەی JSON
-                const jsonUrl = 'https://raw.githubusercontent.com/mzerem18-cpu/ipaashte/main/Ashtemobile.json?v=' + Date.now();
-                
-                try {
-                    const res = await fetch(jsonUrl);
-                    if (res.ok) data = await res.json();
-                } catch(e) {}
-
-                if (!data) {
-                    const proxyRes = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent('https://ashtemobile.site/Ashtemobile.json'));
-                    if (proxyRes.ok) data = await proxyRes.json();
-                }
-
-                if (!data) throw new Error('All fetch methods failed');
-                
-                const apps = Array.isArray(data) ? data : (data.apps || data.data || []); 
+                const apps = embeddedApps;
                 
                 bentoContainer.innerHTML = '';
                 sheetList.innerHTML = '';
 
-                if (apps.length === 0) {
-                    bentoContainer.innerHTML = '<p style="text-align: center; width: 100%; color: var(--text-gray); font-size: 14px; margin-top: 20px;">No apps found.</p>';
-                    return;
-                }
-
                 apps.forEach(app => {
-                    const appName = app.name || app.title || 'App';
-                    const appIcon = app.iconURL || app.icon || app.image || 'https://raw.githubusercontent.com/mzereashte94/Mzere/main/icons/Ashtemobile.jpeg';
-                    const ipaLink = app.download_url || app.install_url || app.downloadURL || app.url || ''; 
-                    const bundleId = app.bundleIdentifier || 'com.ashtemobile.app';
+                    const appName = app.name;
+                    const appIcon = app.iconURL;
+                    const ipaLink = app.download_url;
+                    const bundleId = app.bundleIdentifier;
 
                     const safeName = appName.replace(/'/g, "\\'");
                     const safeIpa = ipaLink.replace(/'/g, "\\'");
