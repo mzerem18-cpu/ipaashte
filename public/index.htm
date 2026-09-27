@@ -277,7 +277,6 @@
         const appSheet = document.getElementById('appSheet');
         const sheetList = document.getElementById('sheetList');
 
-        // لیست برنامه‌ها مستقیماً در اینجا وارد شده تا نیازی به فایل JSON خارجی نباشد. می‌توانید برنامه‌های بیشتری به این لیست اضافه کنید.
         const embeddedApps = [
             {
                 name: "Ashtemobile",
@@ -389,6 +388,14 @@
             reader.onload = () => resolve(reader.result.split(',')[1]); reader.onerror = error => reject(error);
         });
 
+        // گەڕاندنەوەی فەنکشنی پشکنینی دۆخی سێرڤەر (چاوەڕێی گیتھەب دەکات)
+        async function checkStatus(buildId, appName) {
+            try { 
+                const res = await fetch(`/api/status?build_id=${buildId}&app=${encodeURIComponent(appName)}`); 
+                return await res.json(); 
+            } catch(e) { return { status: 'processing' }; }
+        }
+
         async function downloadCertFiles() {
             const certId = document.getElementById('freeCertSelect').value;
             const baseUrl = `https://raw.githubusercontent.com/mzereashte94/nn/main/cert/${certId}`;
@@ -432,16 +439,15 @@
 
             let pct = 0;
             const sim = setInterval(() => { 
-                if (pct < 95) { 
-                    pct += Math.floor(Math.random() * 8) + 2; 
-                    if (pct > 95) pct = 95; 
+                if (pct < 90) { 
+                    pct += Math.floor(Math.random() * 5) + 1; 
+                    if (pct > 90) pct = 90; 
                     pctText.innerText = pct + '%'; 
                 } 
-            }, 150);
+            }, 500);
 
-            // ارسال درخواست به سرور در صورت نیاز (عدم توقف در صورت خطا)
             try {
-                await fetch('/api/sign', {
+                const res = await fetch('/api/sign', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -451,72 +457,59 @@
                         ipa_link: ipaLink
                     })
                 });
-            } catch (e) {}
-
-            setTimeout(() => {
-                clearInterval(sim);
-                pctText.innerText = '100%';
                 
-                setTimeout(() => {
-                    progressOverlay.style.display = 'none'; 
-                    successOverlay.style.display = 'flex';
-                    
-                    // تولید مستقیم فایل نصب (Manifest) در مرورگر و شروع نصب
-                    const manifestContent = `<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>items</key>
-    <array>
-        <dict>
-            <key>assets</key>
-            <array>
-                <dict>
-                    <key>kind</key>
-                    <string>software-package</string>
-                    <key>url</key>
-                    <string>${ipaLink}</string>
-                </dict>
-                <dict>
-                    <key>kind</key>
-                    <string>display-image</string>
-                    <key>url</key>
-                    <string>${iconUrl}</string>
-                </dict>
-            </array>
-            <key>metadata</key>
-            <dict>
-                <key>bundle-identifier</key>
-                <string>${bundleId}</string>
-                <key>bundle-version</key>
-                <string>1.0</string>
-                <key>kind</key>
-                <string>software</string>
-                <key>title</key>
-                <string>${appName}</string>
-            </dict>
-        </dict>
-    </array>
-</dict>
-</plist>`;
+                if(!res.ok) throw new Error('Error');
+                const data = await res.json();
 
-                    const blob = new Blob([manifestContent], { type: 'text/xml' });
-                    const manifestUrl = window.URL.createObjectURL(blob);
+                // کۆدەکە بە تەواوی چاوەڕێی گیتھەب دەکات تا فایلەکە واژۆ دەکات و ئەپلۆدی دەکات
+                const checker = setInterval(async () => {
+                    const serverStatus = await checkStatus(data.build_id, appName);
                     
-                    window.location.href = `itms-services://?action=download-manifest&url=${encodeURIComponent(manifestUrl)}`;
-                    
-                    setTimeout(() => {
-                        successOverlay.style.display = 'none';
-                        btnElement.innerText = 'GET';
-                        btnElement.style.opacity = '1';
-                        btnElement.style.pointerEvents = 'auto';
-                        pctText.innerText = '0%';
+                    if (serverStatus.status === 'done') {
+                        clearInterval(checker); 
+                        clearInterval(sim);
+                        pctText.innerText = '100%';
                         
-                        window.location.href = "https://t.me/ashtemobile";
-                    }, 2500);
+                        setTimeout(() => {
+                            progressOverlay.style.display = 'none'; 
+                            successOverlay.style.display = 'flex';
+                            
+                            // بەکارهێنانی APIـی فەرمی خۆت بۆ دروستکردنی مانایفێستی ڕاستەقینە و قبوڵکراو لای ئایۆس
+                            const directIpa = serverStatus.ipaUrl || '';
+                            const directBundle = bundleId;
+                            const manifestApiUrl = `https://${window.location.host}/api/manifest?ipa=${encodeURIComponent(directIpa)}&bundle_url=${encodeURIComponent(directBundle)}&app=${encodeURIComponent(appName)}`;
+                            
+                            window.location.href = `itms-services://?action=download-manifest&url=${encodeURIComponent(manifestApiUrl)}`;
+                            
+                            setTimeout(() => {
+                                successOverlay.style.display = 'none';
+                                btnElement.innerText = 'GET';
+                                btnElement.style.opacity = '1';
+                                btnElement.style.pointerEvents = 'auto';
+                                pctText.innerText = '0%';
+                                window.location.href = "https://t.me/ashtemobile";
+                            }, 2500);
 
-                }, 500);
-            }, 3000);
+                        }, 500);
+                    } else if (serverStatus.status === 'error' || serverStatus.status === 'failed') {
+                        clearInterval(checker);
+                        clearInterval(sim);
+                        throw new Error('Github Error');
+                    }
+                }, 3000);
+
+            } catch (err) {
+                clearInterval(sim); 
+                pctText.innerText = 'Err'; 
+                pctText.style.color = '#ff453a';
+                setTimeout(() => { 
+                    progressOverlay.style.display = 'none'; 
+                    pctText.style.color = '#fff'; 
+                    btnElement.innerText = 'GET'; 
+                    btnElement.style.opacity = '1'; 
+                    btnElement.style.pointerEvents = 'auto'; 
+                }, 2500);
+            }
         }
 
         document.getElementById('formVIP').onsubmit = async (e) => {
@@ -536,13 +529,13 @@
             if (!ipaLinkSelected) return alert('Please select an app to sign!');
 
             btn.style.opacity = '0.5'; btn.style.pointerEvents = 'none'; pWrap.style.display = 'block';
-            status.style.display = 'block'; status.innerText = 'Processing Certificate...'; 
+            status.style.display = 'block'; status.innerText = 'Uploading to Engine...'; 
 
             try {
                 const p12 = await toBase64(p12File.files[0]);
                 const prov = await toBase64(provFile.files[0]);
 
-                await fetch('/api/sign', {
+                const res = await fetch('/api/sign', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -553,72 +546,57 @@
                         ipa_link: ipaLinkSelected
                     })
                 });
-            } catch (e) {}
-
-            let sim = 0; 
-            const anim = setInterval(() => { 
-                if (sim < 95) sim += 5; 
-                pFill.style.width = sim + '%'; 
-            }, 200);
-
-            setTimeout(() => {
-                clearInterval(anim); 
-                pFill.style.width = '100%';
-                status.innerText = 'Success! Prompting Install...'; 
-                status.style.color = '#32D74B';
                 
-                setTimeout(() => {
-                    const manifestContent = `<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>items</key>
-    <array>
-        <dict>
-            <key>assets</key>
-            <array>
-                <dict>
-                    <key>kind</key>
-                    <string>software-package</string>
-                    <key>url</key>
-                    <string>${ipaLinkSelected}</string>
-                </dict>
-            </array>
-            <key>metadata</key>
-            <dict>
-                <key>bundle-identifier</key>
-                <string>com.ashtemobile.vip</string>
-                <key>bundle-version</key>
-                <string>1.0</string>
-                <key>kind</key>
-                <string>software</string>
-                <key>title</key>
-                <string>${appSelected}</string>
-            </dict>
-        </dict>
-    </array>
-</dict>
-</plist>`;
+                if(!res.ok) throw new Error('Error');
+                const data = await res.json();
 
-                    const blob = new Blob([manifestContent], { type: 'text/xml' });
-                    const manifestUrl = window.URL.createObjectURL(blob);
+                status.innerText = 'Signing Certificate (GitHub Actions)...';
+                let sim = 0; 
+                const anim = setInterval(() => { 
+                    if (sim < 90) sim += 3; 
+                    pFill.style.width = sim + '%'; 
+                }, 400);
 
-                    window.location.href = `itms-services://?action=download-manifest&url=${encodeURIComponent(manifestUrl)}`;
+                const checker = setInterval(async () => {
+                    const serverStatus = await checkStatus(data.build_id, appSelected);
                     
-                    setTimeout(() => {
-                        pWrap.style.display = 'none'; 
-                        btn.style.display = 'block'; 
-                        btn.style.pointerEvents = 'auto';
-                        btn.style.opacity = '1';
-                        status.style.display = 'none'; 
-                        status.style.color = 'var(--text-gray)';
-                        pFill.style.width = '0%';
+                    if (serverStatus.status === 'done') {
+                        clearInterval(checker); 
+                        clearInterval(anim); 
+                        pFill.style.width = '100%';
+                        status.innerText = 'Success! Prompting Install...'; 
+                        status.style.color = '#32D74B';
                         
-                        window.location.href = "https://t.me/ashtemobile";
-                    }, 2500);
+                        setTimeout(() => {
+                            const directIpa = serverStatus.ipaUrl || '';
+                            const directBundle = "com.ashtemobile.vip";
+                            const manifestApiUrl = `https://${window.location.host}/api/manifest?ipa=${encodeURIComponent(directIpa)}&bundle_url=${encodeURIComponent(directBundle)}&app=${encodeURIComponent(appSelected)}`;
+                            
+                            window.location.href = `itms-services://?action=download-manifest&url=${encodeURIComponent(manifestApiUrl)}`;
+                            
+                            setTimeout(() => {
+                                pWrap.style.display = 'none'; 
+                                btn.style.display = 'block'; 
+                                btn.style.pointerEvents = 'auto';
+                                btn.style.opacity = '1';
+                                status.style.display = 'none'; 
+                                status.style.color = 'var(--text-gray)';
+                                pFill.style.width = '0%';
+                                window.location.href = "https://t.me/ashtemobile";
+                            }, 2500);
 
-                }, 800);
-            }, 3000);
+                        }, 800); 
+                    } else if (serverStatus.status === 'error' || serverStatus.status === 'failed') {
+                        clearInterval(checker);
+                        clearInterval(anim);
+                        throw new Error('Github Error');
+                    }
+                }, 3000);
+
+            } catch (err) {
+                status.innerText = 'Connection Failed. Try again.'; status.style.color = '#ef4444';
+                setTimeout(() => { pWrap.style.display = 'none'; btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; status.style.display = 'none'; }, 3000);
+            }
         };
     </script>
 </body>
