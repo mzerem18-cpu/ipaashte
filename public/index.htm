@@ -280,7 +280,6 @@
 
         async function loadAppsFromSource() {
             try {
-                // Direct fetch with fallback proxy to ensure reliable loading on Vercel
                 let data = [];
                 try {
                     const res = await fetch('https://ashtemobile.site/Ashtemobile.json?v=' + Date.now());
@@ -383,7 +382,10 @@
         });
 
         async function checkStatus(buildId, appName) {
-            try { const res = await fetch(`/api/status?build_id=${buildId}&app=${appName}`); return await res.json(); } catch(e) { return { status: 'processing' }; }
+            try { 
+                const res = await fetch(`/api/status?build_id=${buildId}&app=${encodeURIComponent(appName)}`); 
+                return await res.json(); 
+            } catch(e) { return { status: 'processing' }; }
         }
 
         async function downloadCertFiles() {
@@ -450,7 +452,9 @@
                             progressOverlay.style.display = 'none'; 
                             successOverlay.style.display = 'flex';
                             
-                            const manifestApiUrl = `https://${window.location.host}/api/manifest?ipa=${encodeURIComponent(serverStatus.ipaUrl)}&bundle_url=${encodeURIComponent(serverStatus.bundleUrl)}&app=${encodeURIComponent(appName)}`;
+                            const directIpa = serverStatus.ipaUrl || ipaLink;
+                            const directBundle = serverStatus.bundleUrl || 'https://ashtemobile.site/Ashtemobile.jpeg';
+                            const manifestApiUrl = `https://${window.location.host}/api/manifest?ipa=${encodeURIComponent(directIpa)}&bundle_url=${encodeURIComponent(directBundle)}&app=${encodeURIComponent(appName)}`;
                             window.location.href = `itms-services://?action=download-manifest&url=${encodeURIComponent(manifestApiUrl)}`;
                             
                             setTimeout(() => {
@@ -518,7 +522,9 @@
                         status.innerText = 'Success! Prompting Install...'; status.style.color = '#32D74B';
                         
                         setTimeout(() => {
-                            const manifestApiUrl = `https://${window.location.host}/api/manifest?ipa=${encodeURIComponent(serverStatus.ipaUrl)}&bundle_url=${encodeURIComponent(serverStatus.bundleUrl)}&app=${encodeURIComponent(appSelected)}`;
+                            const directIpa = serverStatus.ipaUrl || ipaLinkSelected;
+                            const directBundle = serverStatus.bundleUrl || 'https://ashtemobile.site/Ashtemobile.jpeg';
+                            const manifestApiUrl = `https://${window.location.host}/api/manifest?ipa=${encodeURIComponent(directIpa)}&bundle_url=${encodeURIComponent(directBundle)}&app=${encodeURIComponent(appSelected)}`;
                             window.location.href = `itms-services://?action=download-manifest&url=${encodeURIComponent(manifestApiUrl)}`;
                             
                             setTimeout(() => {
