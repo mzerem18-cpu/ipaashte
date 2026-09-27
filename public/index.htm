@@ -214,7 +214,6 @@
                     <option value="ChinaEverbri">ChinaEverbri</option>
                     <option value="ChinaMobile">ChinaMobile</option>
                     <option value="FPTSoftware">FPTSoftware</option>
-                    <option value="File">File</option>
                     <option value="Guangzhou">Guangzhou</option>
                     <option value="HDFC2">HDFC2</option>
                     <option value="HDFCLife">HDFCLife</option>
@@ -285,20 +284,19 @@
                 const jsonUrl = 'https://ashtemobile.site/Ashtemobile.json?v=' + Date.now();
                 
                 try {
-                    const res = await fetch(jsonUrl);
+                    const res = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(jsonUrl));
                     if (res.ok) data = await res.json();
                 } catch(e) {}
 
                 if (!data) {
                     try {
-                        const proxyRes = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(jsonUrl));
-                        if (proxyRes.ok) data = await proxyRes.json();
+                        const res2 = await fetch('https://corsproxy.io/?' + encodeURIComponent(jsonUrl));
+                        if (res2.ok) data = await res2.json();
                     } catch(e) {}
                 }
 
                 if (!data) {
-                    const corsProxy = 'https://corsproxy.io/?' + encodeURIComponent(jsonUrl);
-                    const res3 = await fetch(corsProxy);
+                    const res3 = await fetch(jsonUrl);
                     if (res3.ok) data = await res3.json();
                 }
 
