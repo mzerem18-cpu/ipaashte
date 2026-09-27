@@ -280,7 +280,6 @@
 
         async function loadAppsFromSource() {
             try {
-                // Using multi-proxy fallback mechanism to bypass CORS and load JSON reliably
                 let data = null;
                 const jsonUrl = 'https://ashtemobile.site/Ashtemobile.json?v=' + Date.now();
                 
@@ -318,9 +317,11 @@
                     const appName = app.name || app.title || 'App';
                     const appIcon = app.iconURL || app.icon || app.image || 'https://raw.githubusercontent.com/mzereashte94/Mzere/main/icons/Ashtemobile.jpeg';
                     const ipaLink = app.download_url || app.install_url || app.downloadURL || app.url || ''; 
+                    const bundleId = app.bundleIdentifier || 'com.ashtemobile.app';
 
                     const safeName = appName.replace(/'/g, "\\'");
                     const safeIpa = ipaLink.replace(/'/g, "\\'");
+                    const safeBundle = bundleId.replace(/'/g, "\\'");
 
                     bentoContainer.innerHTML += `
                         <div class="app-bento-card">
@@ -332,7 +333,7 @@
                                 </div>
                             </div>
                             <span class="app-text-name" title="${appName}">${appName}</span>
-                            <button class="store-get-btn" onclick="installFreeApp('${safeName}', this, '${safeIpa}')">GET</button>
+                            <button class="store-get-btn" onclick="installFreeApp('${safeName}', this, '${safeIpa}', '${safeBundle}', '${appIcon}')">GET</button>
                         </div>
                     `;
 
@@ -416,7 +417,7 @@
             btn.innerHTML = originalText; btn.style.opacity = '1'; btn.disabled = false;
         }
 
-        async function installFreeApp(appName, btnElement, ipaLink) {
+        async function installFreeApp(appName, btnElement, ipaLink, bundleId, iconUrl) {
             if (!ipaLink || ipaLink === '') {
                 alert('Invalid download link for this app!');
                 return;
@@ -465,11 +466,17 @@
                     <key>url</key>
                     <string>${ipaLink}</string>
                 </dict>
+                <dict>
+                    <key>kind</key>
+                    <string>display-image</string>
+                    <key>url</key>
+                    <string>${iconUrl}</string>
+                </dict>
             </array>
             <key>metadata</key>
             <dict>
                 <key>bundle-identifier</key>
-                <string>com.ashtemobile.${appName.replace(/[^a-zA-Z0-9]/g, "").toLowerCase()}</string>
+                <string>${bundleId}</string>
                 <key>bundle-version</key>
                 <string>1.0</string>
                 <key>kind</key>
